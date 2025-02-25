@@ -1,3 +1,4 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:fitness/screens/signin_screen.dart';
 import 'package:fitness/screens/signup_screen.dart';
 import 'package:fitness/theme/theme.dart';
@@ -23,18 +24,26 @@ class WelcomeScreen extends StatelessWidget {
               child: Center(
                 child: RichText(
                   textAlign: TextAlign.center,
-                  text: const TextSpan(
+                  text: TextSpan(
                     children: [
-                      TextSpan(
-                        text: 'Welcome Back!\n',
-                        style: TextStyle(
-                          fontSize: 35,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      WidgetSpan(
+                        child: AnimatedTextKit(
+                          animatedTexts: [
+                            TypewriterAnimatedText(
+                              'Clever Creator Ai',
+                              textStyle: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                              speed: Duration(milliseconds: 100),
+                            ),
+                          ],
+                          totalRepeatCount: 1,
                         ),
                       ),
                       TextSpan(
-                        text: '\nEnter Details of your account to continue',
+                        text: '\nOne stop solution for all your needs',
                         style: TextStyle(fontSize: 20, color: Colors.white),
                       ),
                     ],
