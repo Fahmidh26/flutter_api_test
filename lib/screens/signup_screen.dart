@@ -3,17 +3,136 @@ import 'package:fitness/theme/theme.dart';
 import 'package:fitness/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formSignUpKey = GlobalKey<FormState>();
   bool agreePersonalData = true;
+  bool _isLoading = false;
+
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _passwordConfirmationController = TextEditingController();
+
+  Future<void> _registerUser() async {
+    if (_formSignUpKey.currentState!.validate() && agreePersonalData) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      String name = _nameController.text;
+      String email = _emailController.text;
+      String password = _passwordController.text;
+      String passwordConfirmation = _passwordConfirmationController.text;
+
+      String url =
+          'http://192.168.0.106:8000/api/register'; // Change the IP if necessary
+
+      Map<String, String> headers = {
+        'Content-Type': 'application/json',
+        'X-Auth-Hex': '3ecc7514717beea4', // Add the necessary header
+      };
+
+      Map<String, String> body = {
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      };
+
+      try {
+        final response = await http.post(
+          Uri.parse(url),
+          headers: headers,
+          body: json.encode(body),
+        );
+
+        if (response.statusCode == 201) {
+          final responseData = json.decode(response.body);
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder:
+                  (ctx) => AlertDialog(
+                    title: Text('Success'),
+                    content: Text(responseData['message']),
+                    actions: [
+                      TextButton(
+                        child: Text('OK'),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+            );
+          }
+        } else {
+          final responseData = json.decode(response.body);
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder:
+                  (ctx) => AlertDialog(
+                    title: Text('Error'),
+                    content: Text(
+                      responseData['message'] ?? 'Something went wrong',
+                    ),
+                    actions: [
+                      TextButton(
+                        child: Text('OK'),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+            );
+          }
+        }
+      } catch (error) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder:
+                (ctx) => AlertDialog(
+                  title: Text('Error'),
+                  content: Text('Something went wrong!'),
+                  actions: [
+                    TextButton(
+                      child: Text('OK'),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                      },
+                    ),
+                  ],
+                ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } else if (!agreePersonalData) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the processing of personal data'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +167,7 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 15.0),
                       TextFormField(
+                        controller: _nameController,
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter your name';
@@ -71,6 +191,7 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 15.0),
                       TextFormField(
+                        controller: _emailController,
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter your email';
@@ -94,6 +215,7 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 15.0),
                       TextFormField(
+                        controller: _passwordController,
                         obscureText: true,
                         obscuringCharacter: '*',
                         validator: (value) {
@@ -119,6 +241,7 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 15.0),
                       TextFormField(
+                        controller: _passwordConfirmationController,
                         obscureText: true,
                         obscuringCharacter: '*',
                         validator: (value) {
@@ -177,27 +300,13 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                       const SizedBox(height: 15.0),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_formSignUpKey.currentState!.validate() &&
-                                agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Processing Data'),
+                        child:
+                            _isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : ElevatedButton(
+                                  onPressed: _registerUser,
+                                  child: const Text('Sign up'),
                                 ),
-                              );
-                            } else if (!agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please agree to the processing of personal data',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text('Sign up'),
-                        ),
                       ),
                       const SizedBox(height: 25.0),
                       Row(
@@ -206,7 +315,6 @@ class _SignUpScreenScreenState extends State<SignUpScreen> {
                           Expanded(
                             child: Divider(
                               thickness: 0.7,
-                              // ignore: deprecated_member_use
                               color: Colors.grey.withOpacity(0.5),
                             ),
                           ),
