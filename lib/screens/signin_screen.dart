@@ -7,6 +7,8 @@ import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -58,7 +60,10 @@ class _SignInScreenState extends State<SignInScreen> {
 
           // Save the token
           String token = responseData['token'];
-          await StorageService.saveToken(token);
+          await SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('auth_token', token); // Save the token
+            print('Token saved: $token'); // Debug log
+          });
 
           // Navigate to the dashboard
           Navigator.pushReplacementNamed(context, '/dashboard');

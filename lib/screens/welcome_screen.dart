@@ -5,9 +5,32 @@ import 'package:fitness/theme/theme.dart';
 import 'package:fitness/widgets/welcome_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fitness/widgets/custom_scaffold.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    checkAuthState(); // Check if the user is already logged in
+  }
+
+  Future<void> checkAuthState() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('auth_token'); // Retrieve the token
+    print('Token retrieved: $token'); // Debug log
+
+    if (token != null) {
+      // If the token exists, navigate to the dashboard
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

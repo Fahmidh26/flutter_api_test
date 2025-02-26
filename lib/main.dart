@@ -19,11 +19,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Registration',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/', // Set the initial route
+      initialRoute: '/',
       routes: {
-        '/':
-            (context) => const WelcomeScreen(), // Default route (WelcomeScreen)
-        '/dashboard': (context) => const HomeScreen(), // Dashboard route
+        '/': (context) => const WelcomeScreen(),
+        '/dashboard':
+            (context) => const HomeScreen(), // Define the dashboard route
       },
     );
   }
