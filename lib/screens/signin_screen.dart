@@ -1,21 +1,93 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:fitness/screens/signup_screen.dart';
+import 'package:fitness/services/storage_service.dart';
 import 'package:fitness/theme/theme.dart';
 import 'package:fitness/widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenScreenState();
+  State<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignInScreenScreenState extends State<SignInScreen> {
+class _SignInScreenState extends State<SignInScreen> {
   final _formSignInKey = GlobalKey<FormState>();
   bool rememberPassword = true;
+  bool _isLoading = false;
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  Future<void> _loginUser() async {
+    if (_formSignInKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      String email = _emailController.text;
+      String password = _passwordController.text;
+
+      String url =
+          'http://192.168.0.106:8000/api/login'; // Replace with your Laravel app URL
+
+      Map<String, String> headers = {'Content-Type': 'application/json'};
+
+      Map<String, String> body = {'email': email, 'password': password};
+
+      try {
+        final response = await http.post(
+          Uri.parse(url),
+          headers: headers,
+          body: json.encode(body),
+        );
+
+        // Print the response status code and body
+        print('Status Code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          // Login successful
+          final responseData = json.decode(response.body);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(responseData['message'])));
+
+          // Save the token
+          String token = responseData['token'];
+          await StorageService.saveToken(token);
+
+          // Navigate to the dashboard
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          // Login failed
+          final responseData = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseData['message'] ?? 'Invalid credentials'),
+            ),
+          );
+        }
+      } catch (error) {
+        // Handle network or server errors
+        print('Error: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong! Please try again.'),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +122,7 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                       ),
                       const SizedBox(height: 40.0),
                       TextFormField(
+                        controller: _emailController,
                         validator: (value) {
                           if (value!.isEmpty) {
                             return 'Please enter your email';
@@ -73,6 +146,7 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                       ),
                       const SizedBox(height: 40.0),
                       TextFormField(
+                        controller: _passwordController,
                         obscureText: true,
                         obscuringCharacter: '*',
                         validator: (value) {
@@ -131,27 +205,15 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                       const SizedBox(height: 25.0),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_formSignInKey.currentState!.validate() &&
-                                rememberPassword) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Processing Data'),
+                        child:
+                            _isLoading
+                                ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                                : ElevatedButton(
+                                  onPressed: _loginUser,
+                                  child: const Text('Sign In'),
                                 ),
-                              );
-                            } else if (!rememberPassword) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please agree to the processing of personal data',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text('Sign up'),
-                        ),
                       ),
                       const SizedBox(height: 25.0),
                       Row(
@@ -160,7 +222,6 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                           Expanded(
                             child: Divider(
                               thickness: 0.7,
-                              // ignore: deprecated_member_use
                               color: Colors.grey.withOpacity(0.5),
                             ),
                           ),
@@ -170,7 +231,7 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                               horizontal: 10,
                             ),
                             child: Text(
-                              'Sign up with',
+                              'Sign in with',
                               style: TextStyle(color: Colors.black45),
                             ),
                           ),
@@ -195,7 +256,7 @@ class _SignInScreenScreenState extends State<SignInScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Don\'t have an account?   '),
+                          const Text('Don\'t have an account?   '),
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
